@@ -2,15 +2,18 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub struct Add {
-    sentence: String,
+    pub path: String,
 }
 
 #[derive(Parser, Debug)]
 pub struct Fetch {
     #[clap(short, long)]
-    reverse: bool,
+    pub asc: bool,
     #[clap(short, long)]
-    limit: Option<u64>,
+    pub limit: Option<usize>,
     #[clap(short, long)]
-    with_score: bool,
+    pub with_score: bool,
 }
+
+#[derive(Parser, Debug)]
+pub struct RemoveNotExists;

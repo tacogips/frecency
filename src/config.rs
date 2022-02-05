@@ -1,6 +1,6 @@
 use dirs::home_dir;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -21,13 +21,14 @@ pub enum ConfigError {
 pub type Result<T> = std::result::Result<T, ConfigError>;
 
 pub struct Config {
-    dbpath: PathBuf,
+    pub dbpath: PathBuf,
 }
 
-pub fn create_db_dir_if_not_exists(db_path: PathBuf) -> Result<()> {
+pub fn create_db_dir_if_not_exists(db_path: &Path) -> Result<()> {
     let dir = db_path
         .parent()
-        .ok_or_else(|| ConfigError::InvalidPath(db_path.clone()))?;
+        .ok_or_else(|| ConfigError::InvalidPath(db_path.to_path_buf()))?;
+
     if !dir.exists() {
         fs::create_dir_all(dir)?;
     }
@@ -36,9 +37,9 @@ pub fn create_db_dir_if_not_exists(db_path: PathBuf) -> Result<()> {
 }
 
 impl Config {
-    pub fn default_dbpath() -> Result<PathBuf> {
+    fn default_dbpath() -> Result<PathBuf> {
         let mut dir = home_dir().ok_or_else(|| ConfigError::FaildToGetHome)?;
-        dir.push(".local/share/frecency/db/frecency.sqlite3");
+        dir.push(".local/share/frecency/db/frecency.db3");
         Ok(dir)
     }
 
@@ -59,6 +60,8 @@ impl Config {
         } else {
             Self::default_dbpath()?
         };
+
+        create_db_dir_if_not_exists(&dbpath)?;
 
         Ok(Self { dbpath })
     }
