@@ -4,7 +4,8 @@ version = "0.1.0"
 
 repository = "https://github.com/tacogips/path-frecency"
 edition = "2021"
-licence = "MIT"
+license = "MIT"
+rust-version = "1.58"
 keywords = [
 	"fzf",
 	"zsh",
