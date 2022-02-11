@@ -7,6 +7,7 @@ use clap::Parser;
 use cmd::*;
 use config::*;
 use frecency::*;
+use std::io::{stdout, Error as IOError, Write};
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -17,6 +18,9 @@ pub enum CmdError {
 
     #[error("{0}")]
     ConfigError(#[from] ConfigError),
+
+    #[error("{0}")]
+    IOError(#[from] IOError),
 }
 
 pub type Result<T> = std::result::Result<T, CmdError>;
@@ -40,12 +44,20 @@ enum SubCommand {
     RemoveNotExists,
 }
 
-fn show_only_path(path: &str, _: f64) {
-    println!("{path}")
+fn show_only_path<W>(dest: &mut W, path: &str, _: f64) -> Result<()>
+where
+    W: Write,
+{
+    writeln!(dest, "{path}")?;
+    Ok(())
 }
 
-fn show_with_score(path: &str, score: f64) {
-    println!("{score}    {path}")
+fn show_with_score<W>(dest: &mut W, path: &str, score: f64) -> Result<()>
+where
+    W: Write,
+{
+    writeln!(dest, "{score}    {path}")?;
+    Ok(())
 }
 
 fn run() -> Result<()> {
@@ -70,13 +82,15 @@ fn run() -> Result<()> {
                 show_only_path
             };
 
+            let stdout = stdout();
+            let mut stdout_lock = stdout.lock();
             if fetch.asc {
                 for (path, score) in scores.into_iter().rev() {
-                    print_fn(&path, score)
+                    print_fn(&mut stdout_lock, &path, score)?;
                 }
             } else {
                 for (path, score) in scores.into_iter() {
-                    print_fn(&path, score)
+                    print_fn(&mut stdout_lock, &path, score)?;
                 }
             }
         }
