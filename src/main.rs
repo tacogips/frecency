@@ -68,7 +68,7 @@ fn run() -> Result<()> {
         SubCommand::Add(add) => {
             let now = Utc::now();
             let latest_visit_in_milli_sec = now.timestamp_millis() as u64;
-            if let Err(_) = add_visit(&mut db, &add.path, latest_visit_in_milli_sec) {
+            if add_visit(&mut db, &add.path, latest_visit_in_milli_sec).is_err() {
                 create_tables(&db)?;
                 add_visit(&mut db, &add.path, latest_visit_in_milli_sec)?
             }

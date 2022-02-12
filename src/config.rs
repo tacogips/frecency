@@ -38,7 +38,7 @@ pub fn create_db_dir_if_not_exists(db_path: &Path) -> Result<()> {
 
 impl Config {
     fn default_dbpath() -> Result<PathBuf> {
-        let mut dir = home_dir().ok_or_else(|| ConfigError::FaildToGetHome)?;
+        let mut dir = home_dir().ok_or(ConfigError::FaildToGetHome)?;
         dir.push(".local/share/frecency/db/frecency.db3");
         Ok(dir)
     }

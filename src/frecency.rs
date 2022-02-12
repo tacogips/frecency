@@ -128,14 +128,12 @@ pub fn fetch_scores(db: &DB, limit: Option<usize>) -> Result<Vec<(String, f64)>>
 }
 
 pub fn fetch_visits(db: &DB, path: &str) -> Result<Vec<u64>> {
-    let fetch_query = format!(
-        " SELECT visit_in_milli_sec
+    let fetch_query = " SELECT visit_in_milli_sec
             FROM visits
             WHERE path = :path
-            ORDER BY visit_in_milli_sec ASC ",
-    );
+            ORDER BY visit_in_milli_sec ASC ";
 
-    let mut stmt = db.conn.prepare_cached(&fetch_query)?;
+    let mut stmt = db.conn.prepare_cached(fetch_query)?;
     let mut visits = Vec::new();
 
     let records = stmt.query_map(&[(":path", &path)], |row| row.get(0))?;
@@ -149,7 +147,7 @@ pub fn fetch_visits(db: &DB, path: &str) -> Result<Vec<u64>> {
 pub fn calc_score(latest_visit: u64, past_visits_milli_sec: &[u64]) -> f64 {
     debug_assert!(!past_visits_milli_sec.is_empty());
     past_visits_milli_sec
-        .into_iter()
+        .iter()
         .map(|each_past_visits| {
             let age =
                 (latest_visit as i64 - *each_past_visits as i64).max(0) as f64 / DAY_IN_MILLI_SEC;
@@ -191,7 +189,7 @@ fn store_score_with_latest_visit(
 
         if !remove_visits.is_empty() {
             let visits_in = remove_visits
-                .into_iter()
+                .iter()
                 .map(|v| format!("{v}"))
                 .collect::<Vec<String>>()
                 .join(",");
