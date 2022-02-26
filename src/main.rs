@@ -26,7 +26,7 @@ pub enum CmdError {
 pub type Result<T> = std::result::Result<T, CmdError>;
 
 #[derive(Parser, Debug)]
-#[clap(version = "0.1.0", author = "tacogips")]
+#[clap(version = "0.1.1", author = "tacogips")]
 struct Opts {
     #[clap(short, long)]
     db_file: Option<String>,
@@ -74,7 +74,11 @@ fn run() -> Result<()> {
             }
         }
         SubCommand::Fetch(fetch) => {
-            let scores = fetch_scores(&db, fetch.limit)?;
+            let scores = if fetch.sort_by_last_visit {
+                fetch_last_visit(&db, fetch.limit)?
+            } else {
+                fetch_scores(&db, fetch.limit)?
+            };
 
             let print_fn = if fetch.with_score {
                 show_with_score

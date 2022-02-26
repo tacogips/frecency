@@ -46,7 +46,8 @@ pub fn create_tables(db: &DB) -> Result<()> {
         r"
         CREATE TABLE IF NOT EXISTS scores(
             path, TEXT PRIMARY KEY,
-            score RATE NOT NULL
+            score RATE NOT NULL,
+            last_visit_in_milli_sec INTEGER NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS visits(
@@ -54,9 +55,11 @@ pub fn create_tables(db: &DB) -> Result<()> {
             visit_in_milli_sec INTEGER NOT NULL
         );
 
+
+        CREATE INDEX IF NOT EXISTS last_visit_in_scores ON scores(last_visit_in_milli_sec);
         CREATE INDEX IF NOT EXISTS score_in_scores ON scores(score);
         CREATE INDEX IF NOT EXISTS path_in_visits ON visits(path);
-        CREATE INDEX IF NOT EXISTS path_adn_visit_in_visits ON visits(path, visit_in_milli_sec);
+        CREATE INDEX IF NOT EXISTS path_and_visit_in_visits ON visits(path, visit_in_milli_sec);
 
         ",
     )?;
@@ -68,9 +71,10 @@ pub fn drop_tables(db: &DB) -> Result<()> {
     db.conn.execute_batch(
         r"
 
+        DROP INDEX IF EXISTS last_visit_in_scores;
         DROP INDEX IF EXISTS score_in_scores;
         DROP INDEX IF EXISTS path_in_visits;
-        DROP INDEX IF EXISTS path_adn_visit_in_visits;
+        DROP INDEX IF EXISTS path_and_visit_in_visits;
 
         DROP TABLE IF EXISTS scores;
         DROP TABLE IF EXISTS visits;
@@ -109,6 +113,35 @@ pub fn fetch_scores(db: &DB, limit: Option<usize>) -> Result<Vec<(String, f64)>>
         None => "SELECT score, path
             FROM scores
             ORDER BY score DESC"
+            .to_string(),
+    };
+
+    let mut stmt = db.conn.prepare_cached(&fetch_query)?;
+
+    let records = stmt.query_and_then([], |row| -> SqliteResult<(String, f64)> {
+        let score: f64 = row.get(0)?;
+        let path: String = row.get(1)?;
+        Ok((path, score))
+    })?;
+    let mut scores = Vec::new();
+    for each in records {
+        let (path, score) = each?;
+        scores.push((path, score));
+    }
+    Ok(scores)
+}
+
+pub fn fetch_last_visit(db: &DB, limit: Option<usize>) -> Result<Vec<(String, f64)>> {
+    let fetch_query = match limit {
+        Some(limit) => format!(
+            " SELECT score, path
+            FROM scores
+            ORDER BY last_visit_in_milli_sec DESC
+            LIMIT {limit} ",
+        ),
+        None => "SELECT score, path
+            FROM scores
+            ORDER BY last_visit_in_milli_sec  DESC"
             .to_string(),
     };
 
@@ -168,7 +201,9 @@ fn store_score_with_latest_visit(
 
     if is_first_visits {
         tx.execute(
-            &format!("INSERT INTO scores(path, score)VALUES(:path, {score})"),
+            &format!(
+                "INSERT INTO scores(path, score, last_visit_in_milli_sec)VALUES(:path, {score}, {latest_visit})"
+            ),
             &[(":path", &path)],
         )?;
 
@@ -178,7 +213,7 @@ fn store_score_with_latest_visit(
         )?;
     } else {
         tx.execute(
-            &format!("UPDATE  scores set score = {score} WHERE path =:path "),
+            &format!("UPDATE  scores set score = {score}, last_visit_in_milli_sec = {latest_visit} WHERE path =:path "),
             &[(":path", &path)],
         )?;
 

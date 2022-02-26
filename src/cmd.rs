@@ -13,6 +13,8 @@ pub struct Fetch {
     pub limit: Option<usize>,
     #[clap(short, long)]
     pub with_score: bool,
+    #[clap(long)]
+    pub sort_by_last_visit: bool,
 }
 
 #[derive(Parser, Debug)]

@@ -1,6 +1,6 @@
 [package]
 name = "path-frecency"
-version = "0.1.0"
+version = "0.1.1"
 
 repository = "https://github.com/tacogips/path-frecency"
 edition = "2021"
